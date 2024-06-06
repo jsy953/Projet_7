@@ -1,32 +1,38 @@
-const http = require('http');
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-
+const express = require("express");
+const mongoose = require("mongoose");
 const app = express();
+const PORT = process.env.PORT || 4000;
+require("dotenv").config();
+const bookRoutes = require("./routes/book");
+const userRoutes = require("./routes/user");
+const path = require("path");
 
-const dbURI = `mongodb+srv://Usertest:User95@cluster0.xork8jk.mongodb.net`;
+app.listen(PORT, () => {
+	console.log(PORT);
+});
+
+if (!process.env.CONNEXION) {
+	console.error("Erreur : Variable de connexion non definie dans le dossier '.env' !");
+	process.exit(1);
+}
+
+mongoose.connect(`mongodb+srv://${process.env.CONNEXION}`, {
+	useNewUrlParser: true,
+	useUnifiedTopology: true
+})
+	.then(() => console.log("Connection a MongoDB reussi!"))
+	.catch((error) => console.log(error, "Connection a MongoDB echouer!"));
+
+app.use((req, res, next) => {
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content, Accept, Content-Type, Authorization");
+	res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+	next();
+});
 
 app.use(express.json());
+app.use("/api/books", bookRoutes);
+app.use("/api/auth", userRoutes);
+app.use("/images", express.static(path.join(__dirname, "images")));
 
-
-mongoose.connect(dbURI)
-    .then(() => console.log('Connexion à MongoDB réussie !'))
-    .catch(err => console.error('Connexion à MongoDB échouée !', err));
-
-
-app.use(cors());
-
-
-app.post('/api/auth/login', (req, res) => {
-    res.send('Login route hit');
-});
-
-app.post('/api/auth/signup', (req, res) => {
-    res.send(req.body);
-});
-
-
-app.listen(4000, () => {
-    console.log('Server is running on port 4000');
-});
+module.exports = app;
